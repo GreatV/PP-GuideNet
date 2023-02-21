@@ -1,7 +1,68 @@
 import paddle
 from paddle import nn
-from paddle.autograd import PyLayer
 import GuideConv
+import math
+import params_init
+
+paddle.seed(0)
+import numpy as np
+
+np.random.seed(0)
+import random
+
+random.seed(0)
+
+
+class ReLU(nn.ReLU):
+    def __init__(self, inplace=False):
+        super(ReLU, self).__init__()
+        self.inplace = inplace
+
+    def forward(self, x):
+        if self.inplace:
+            out = paddle.nn.functional.relu_(x)
+        else:
+            out = super().forward(x)
+        return out
+
+
+def zeros_init_(param):
+    replaced_param = paddle.create_parameter(
+        shape=param.shape,
+        dtype=param.dtype,
+        default_initializer=paddle.nn.initializer.Assign(
+            paddle.zeros(param.shape, param.dtype)
+        ),
+    )
+    paddle.assign(replaced_param, param)
+
+
+def ones_init_(param):
+    replaced_param = paddle.create_parameter(
+        shape=param.shape,
+        dtype=param.dtype,
+        default_initializer=paddle.nn.initializer.Assign(
+            paddle.ones(param.shape, param.dtype)
+        ),
+    )
+    paddle.assign(replaced_param, param)
+
+
+def _initialize_weights(layer: nn.Layer):
+    for _, m in layer.named_sublayers():
+        ones_init_(m.weight)
+        if m.bias is not None:
+            zeros_init_(m.bias)
+
+
+def init_weights(layer):
+    if type(layer) == nn.Conv2D:
+        print("before init weight:", layer.weight.numpy())
+        new_weight = paddle.full(
+            shape=layer.weight.shape, dtype=layer.weight.dtype, fill_value=0.9
+        )
+        layer.weight.set_value(new_weight)
+        print("after init weight:", layer.weight.numpy())
 
 
 # class Conv2dLocal_F(PyLayer):
@@ -58,7 +119,7 @@ class Basic2D(nn.Layer):
             conv = nn.Conv2D(
                 in_channels,
                 out_channels,
-                kernel_size=kernel_size,
+                kernel_size,
                 stride=1,
                 padding=padding,
                 bias_attr=False,
@@ -350,24 +411,21 @@ class GuideNet(nn.Layer):
         return nn.Sequential(*layers)
 
     def _initialize_weights(self):
-        # def truncated_normal_(num, mean=0., std=1.):
-        #     lower = -2 * std
-        #     upper = 2 * std
-        #     X = truncnorm((lower - mean) / std, (upper - mean) / std, loc=mean, scale=std)
-        #     samples = X.rvs(num)
-        #     output = torch.from_numpy(samples)
-        #     return output
-        # nn.initializer.TruncatedNormal()
-
-        for m in self.named_children():
+        for _, m in self.named_children():
             if isinstance(m, nn.Conv2D):
-                n = m.kernel_size[0] * m.kernel_size[1] * m.in_channels
-                # data = truncated_normal_(m.weight.nelement(), mean=0, std=math.sqrt(1.3 * 2. / n))
-                # data = data.type_as(m.weight.data)
-                # m.weight.data = data.view_as(m.weight.data)
-                nn.init.truncated_normal_()
-                if m.bias is not None:
-                    nn.init.zeros_(m.bias)
+                n = m._kernel_size[0] * m._kernel_size[1] * m._in_channels
+                params_init.truncated_normal(
+                    m.weight, mean=0, std=math.sqrt(1.3 * 2.0 / n)
+                )
+                params_init.constant_init(m.bias)
+
+
+def GN():
+    return GuideNet(norm_layer=nn.SyncBatchNorm, guide=Guide)
+
+
+def GNS():
+    return GuideNet(norm_layer=nn.SyncBatchNorm, guide=Guide, weight_ks=1)
 
 
 if __name__ == "__main__":
@@ -378,9 +436,16 @@ if __name__ == "__main__":
     # print(output)
 
     # model = Basic2D(3, 3)
-    # x = paddle.randn([1, 3, 256, 256], dtype="float32")
+    # model = Basic2DTrans(3, 3)
+    # model.eval()
+    # model.apply(_initialize_weights)
+    # # x = paddle.randn([1, 3, 256, 256], dtype="float32")
+    # x = np.random.randn(1, 3, 8, 8).astype("float32")
+    # # print(x)
+    # x = paddle.to_tensor(x)
     # y = model(x)
     # print(y)
+    # paddle.summary(model, (1, 3, 256, 256))
 
     # model = Basic2DTrans(3, 3)
     # x = paddle.randn([1, 3, 256, 256], dtype="float32")
@@ -404,9 +469,15 @@ if __name__ == "__main__":
     # y = model(x)
     # print(y)
 
-    model = GuideNet()
-    img = paddle.randn([1, 3, 256, 256], dtype="float32")
-    lidar = paddle.randn([1, 1, 256, 256], dtype="float32")
-    out = model(img, lidar)
-    print(out)
+    # model = GuideNet()
+    # model.eval()
+    # model.apply(_initialize_weights)
+    # # np.savez("inputs.npy", x=img, y=lidar)
+    # info = np.load("inputs.npz")
+    # img = info["x"]
+    # lidar = info["y"]
+    # img = paddle.to_tensor(img)
+    # lidar = paddle.to_tensor(lidar)
+    # out = model(img, lidar)
+    # print(out)
     pass
