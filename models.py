@@ -50,9 +50,10 @@ def ones_init_(param):
 
 def _initialize_weights(layer: nn.Layer):
     for _, m in layer.named_sublayers():
-        ones_init_(m.weight)
-        if m.bias is not None:
-            zeros_init_(m.bias)
+        if type(m) in [nn.Conv2D, nn.Conv2DTranspose]:
+            ones_init_(m.weight)
+            if m.bias is not None:
+                zeros_init_(m.bias)
 
 
 def init_weights(layer):
@@ -183,6 +184,7 @@ class Basic2DLocal(nn.Layer):
     def forward(self, input, weight):
         out = self.conv(input, weight)
         out = self.bn(out)
+        out = self.relu(out)
         return out
 
 
@@ -447,6 +449,19 @@ if __name__ == "__main__":
     # print(y)
     # paddle.summary(model, (1, 3, 256, 256))
 
+    # model = GuideConv.GuideConv
+    # model = Basic2DLocal(3)
+    # model.eval()
+    # model.apply(_initialize_weights)
+    # # x = paddle.randn([1, 3, 256, 256], dtype="float32")
+    # x = np.random.randn(1, 3, 8, 8).astype("float32")
+    # w = np.random.randn(1, 3, 3, 3, 8, 8).astype("float32")
+    # # print(x)
+    # x = paddle.to_tensor(x)
+    # w = paddle.to_tensor(w)
+    # y = model(x, w)
+    # print(y)
+
     # model = Basic2DTrans(3, 3)
     # x = paddle.randn([1, 3, 256, 256], dtype="float32")
     # y = model(x)
@@ -458,11 +473,22 @@ if __name__ == "__main__":
     # y = model(x, w)
     # print(y)
 
-    # model = Guide(3, 3)
-    # x = paddle.randn([1, 3, 256, 256], dtype="float32")
-    # w = paddle.randn([1, 3, 256, 256], dtype="float32")
-    # y = model(x, w)
-    # print(y)
+    # model = Guide(3, 1)
+    # model = GuideNet(bc=1)
+    model = GuideNet(bc=1, norm_layer=nn.SyncBatchNorm)
+    # model.eval()
+    model.apply(_initialize_weights)
+    # img = np.random.randn(1, 3, 224, 224).astype("float32")
+    # lidar = np.random.randn(1, 1, 224, 224).astype("float32")
+    # img = (np.random.randint(0, 255, size=(1, 3, 224, 224)) / 255).astype("float32")
+    # lidar = (np.random.randint(0, 255, size=(1, 1, 224, 224)) / 255).astype("float32")
+    inputs = np.load("./inputs.npz")
+    img = inputs["arr_0"]
+    lidar = inputs["arr_1"]
+    img = paddle.to_tensor(img)
+    lidar = paddle.to_tensor(lidar)
+    output = model(img, lidar)
+    print(output)
 
     # model = BasicBlock(3, 3)
     # x = paddle.randn([1, 3, 256, 256], dtype="float32")
