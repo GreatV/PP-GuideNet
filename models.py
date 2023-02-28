@@ -4,66 +4,66 @@ import GuideConv
 import math
 import params_init
 
-paddle.seed(0)
-import numpy as np
+# paddle.seed(0)
+# import numpy as np
 
-np.random.seed(0)
-import random
+# np.random.seed(0)
+# import random
 
-random.seed(0)
-
-
-class ReLU(nn.ReLU):
-    def __init__(self, inplace=False):
-        super(ReLU, self).__init__()
-        self.inplace = inplace
-
-    def forward(self, x):
-        if self.inplace:
-            out = paddle.nn.functional.relu_(x)
-        else:
-            out = super().forward(x)
-        return out
+# random.seed(0)
 
 
-def zeros_init_(param):
-    replaced_param = paddle.create_parameter(
-        shape=param.shape,
-        dtype=param.dtype,
-        default_initializer=paddle.nn.initializer.Assign(
-            paddle.zeros(param.shape, param.dtype)
-        ),
-    )
-    paddle.assign(replaced_param, param)
+# class ReLU(nn.ReLU):
+#     def __init__(self, inplace=False):
+#         super(ReLU, self).__init__()
+#         self.inplace = inplace
+
+#     def forward(self, x):
+#         if self.inplace:
+#             out = paddle.nn.functional.relu_(x)
+#         else:
+#             out = super().forward(x)
+#         return out
 
 
-def ones_init_(param):
-    replaced_param = paddle.create_parameter(
-        shape=param.shape,
-        dtype=param.dtype,
-        default_initializer=paddle.nn.initializer.Assign(
-            paddle.ones(param.shape, param.dtype)
-        ),
-    )
-    paddle.assign(replaced_param, param)
+# def zeros_init_(param):
+#     replaced_param = paddle.create_parameter(
+#         shape=param.shape,
+#         dtype=param.dtype,
+#         default_initializer=paddle.nn.initializer.Assign(
+#             paddle.zeros(param.shape, param.dtype)
+#         ),
+#     )
+#     paddle.assign(replaced_param, param)
 
 
-def _initialize_weights(layer: nn.Layer):
-    for _, m in layer.named_sublayers():
-        if type(m) in [nn.Conv2D, nn.Conv2DTranspose]:
-            ones_init_(m.weight)
-            if m.bias is not None:
-                zeros_init_(m.bias)
+# def ones_init_(param):
+#     replaced_param = paddle.create_parameter(
+#         shape=param.shape,
+#         dtype=param.dtype,
+#         default_initializer=paddle.nn.initializer.Assign(
+#             paddle.ones(param.shape, param.dtype)
+#         ),
+#     )
+#     paddle.assign(replaced_param, param)
 
 
-def init_weights(layer):
-    if type(layer) == nn.Conv2D:
-        print("before init weight:", layer.weight.numpy())
-        new_weight = paddle.full(
-            shape=layer.weight.shape, dtype=layer.weight.dtype, fill_value=0.9
-        )
-        layer.weight.set_value(new_weight)
-        print("after init weight:", layer.weight.numpy())
+# def _initialize_weights(layer: nn.Layer):
+#     for _, m in layer.named_sublayers():
+#         if type(m) in [nn.Conv2D, nn.Conv2DTranspose]:
+#             ones_init_(m.weight)
+#             if m.bias is not None:
+#                 zeros_init_(m.bias)
+
+
+# def init_weights(layer):
+#     if type(layer) == nn.Conv2D:
+#         print("before init weight:", layer.weight.numpy())
+#         new_weight = paddle.full(
+#             shape=layer.weight.shape, dtype=layer.weight.dtype, fill_value=0.9
+#         )
+#         layer.weight.set_value(new_weight)
+#         print("after init weight:", layer.weight.numpy())
 
 
 # class Conv2dLocal_F(PyLayer):
@@ -352,7 +352,7 @@ class GuideNet(nn.Layer):
         self.conv = nn.Conv2D(bc * 2, 1, kernel_size=3, stride=1, padding=1)
         self.ref = block(bc * 2, bc * 2, norm_layer=norm_layer, act=False)
 
-        # self._initialize_weights()
+        self._initialize_weights()
 
     def forward(self, img, lidar):
         c0_img = self.conv_img(img)
@@ -393,7 +393,7 @@ class GuideNet(nn.Layer):
         c0 = dc1 + c0_lidar
         output = self.ref(c0)
         output = self.conv(output)
-        return (output,)
+        return output
 
     def _make_layer(self, block, planes, blocks, stride=1):
         norm_layer = self._norm_layer
@@ -473,22 +473,22 @@ if __name__ == "__main__":
     # y = model(x, w)
     # print(y)
 
-    # model = Guide(3, 1)
-    # model = GuideNet(bc=1)
-    model = GuideNet(bc=1, norm_layer=nn.SyncBatchNorm)
-    # model.eval()
-    model.apply(_initialize_weights)
-    # img = np.random.randn(1, 3, 224, 224).astype("float32")
-    # lidar = np.random.randn(1, 1, 224, 224).astype("float32")
-    # img = (np.random.randint(0, 255, size=(1, 3, 224, 224)) / 255).astype("float32")
-    # lidar = (np.random.randint(0, 255, size=(1, 1, 224, 224)) / 255).astype("float32")
-    inputs = np.load("./inputs.npz")
-    img = inputs["arr_0"]
-    lidar = inputs["arr_1"]
-    img = paddle.to_tensor(img)
-    lidar = paddle.to_tensor(lidar)
-    output = model(img, lidar)
-    print(output)
+    # # model = Guide(3, 1)
+    # # model = GuideNet(bc=1)
+    # model = GuideNet(bc=1, norm_layer=nn.SyncBatchNorm)
+    # # model.eval()
+    # model.apply(_initialize_weights)
+    # # img = np.random.randn(1, 3, 224, 224).astype("float32")
+    # # lidar = np.random.randn(1, 1, 224, 224).astype("float32")
+    # # img = (np.random.randint(0, 255, size=(1, 3, 224, 224)) / 255).astype("float32")
+    # # lidar = (np.random.randint(0, 255, size=(1, 1, 224, 224)) / 255).astype("float32")
+    # inputs = np.load("./inputs.npz")
+    # img = inputs["arr_0"]
+    # lidar = inputs["arr_1"]
+    # img = paddle.to_tensor(img)
+    # lidar = paddle.to_tensor(lidar)
+    # output = model(img, lidar)
+    # print(output)
 
     # model = BasicBlock(3, 3)
     # x = paddle.randn([1, 3, 256, 256], dtype="float32")
