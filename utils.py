@@ -56,24 +56,24 @@ def config_param(model):
     return param_groups
 
 
-def save_state(config, model):
+def save_state(config, model, optim, name="result"):
     print("==> Saving model ...")
     env_name = config.name + "_" + str(config.manual_seed)
     save_path = os.path.join("checkpoints", env_name)
     os.makedirs(save_path, exist_ok=True)
-    model_state_dict = model.state_dict()
-    state_dict = {
-        "net": model_state_dict,
-    }
-    paddle.save(state_dict, os.path.join(save_path, "result.pth"))
+    paddle.save(model.state_dict(), os.path.join(save_path, f"{name}.pdparams"))
+    paddle.save(optim.state_dict(), os.path.join(save_path, f"{name}.pdopt"))
 
 
-def resume_state(config, model):
+def resume_state(config, model, optim=None, name="result"):
     env_name = config.name + "_" + str(config.resume_seed)
-    cp_path = os.path.join("checkpoints", env_name, "result.pth")
-    resume_model = paddle.load(cp_path)["net"]
-    model.load_state_dict(resume_model, strict=True)
-    return model
+    saved_path = os.path.join("checkpoints", env_name)
+    resume_model = paddle.load(os.path.join(saved_path, f"{name}.pdparams"))
+    model.set_state_dict(resume_model)
+    if optim:
+        resume_opt = paddle.load(os.path.join(saved_path, f"{name}.pdopt"))
+        optim.set_state_dict(resume_opt)
+    return model, optim
 
 
 def pad_rep(image, ori_size):

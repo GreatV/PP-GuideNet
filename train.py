@@ -10,13 +10,10 @@ def train(epoch):
     Avg = AverageMeter()
     for batch_idx, (rgb, lidar, depth) in enumerate(trainloader):
         if epoch >= config.test_epoch and iters % config.test_iters == 0:
-            test()
+            test(epoch)
         net.train()
-        # rgb, lidar, depth = rgb.cuda(), lidar.cuda(), depth.cuda()
-        # optimizer.zero_grad()
         optimizer.clear_grad()
         output = net(rgb, lidar)
-        # print(output)
         loss = criterion(output, depth).mean()
         loss.backward()
         optimizer.step()
@@ -26,19 +23,19 @@ def train(epoch):
             print("Epoch {} Idx {} Loss {:.4f}".format(epoch, batch_idx, Avg.avg))
 
 
-def test():
+def test(epoch):
     global best_metric
     Avg = AverageMeter()
     net.eval()
     for batch_idx, (rgb, lidar, depth) in enumerate(testloader):
-        # rgb, lidar, depth = rgb.cuda(), lidar.cuda(), depth.cuda()
         with paddle.no_grad():
             output = net(rgb, lidar)
             prec = metric(output, depth).mean()
-        Avg.update(prec.item(), rgb.size(0))
+        Avg.update(prec.item(), rgb.shape[0])
+    # save_state(config, net, optimizer, f"epoch_{epoch}")
     if Avg.avg < best_metric:
         best_metric = Avg.avg
-        save_state(config, net)
+        save_state(config, net, optimizer, "best")
         print("Best Result: {:.4f}\n".format(best_metric))
 
 
