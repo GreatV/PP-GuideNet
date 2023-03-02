@@ -108,6 +108,7 @@ public:
   // is depth at given pixel to invalid
   inline bool setInvalid (const int32_t u,const int32_t v) {
     data_[v*width_+u] = -1;
+    return true;
   }
 
   // get maximal depth
@@ -241,7 +242,7 @@ public:
               }
             }
           } else {
-            float d_err = std::min(fabs(getDepth(u,v)-D_gt.getDepth(u,v)),5.0)/5.0;
+            float d_err = std::min(fabs(getDepth(u,v)-D_gt.getDepth(u,v)),5.0f)/5.0f;
             val.red   = (uint8_t)(d_err*255.0);
             val.green = (uint8_t)(d_err*255.0);
             val.blue  = (uint8_t)(d_err*255.0);
