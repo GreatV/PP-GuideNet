@@ -21,7 +21,7 @@ def test():
                 depth_predf = paddle.flip(depth_predf, [-1])
                 depth_pred = (depth_pred + depth_predf) / 2.0
             else:
-                (depth_pred,) = net(rgb, lidar)
+                depth_pred = net(rgb, lidar)
             depth_pred[depth_pred < 0] = 0
         depth_pred = depth_pred.squeeze(1).numpy()
         idx = idx.squeeze(1).numpy()
