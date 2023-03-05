@@ -9,7 +9,10 @@ A PaddlePaddle implementation for [Learning Guided Convolutional Network for Dep
 
 2. Build CUDA extension
 
-```bash
+```shell
+# You may need to install additional packages.
+sudo apt install libpython3.8-dev libnccl-dev
+
 cd ext
 python setup.py install
 ```
