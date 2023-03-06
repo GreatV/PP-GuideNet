@@ -64,7 +64,11 @@ if __name__ == "__main__":
     lr_scheduler = init_lr_scheduler(config)
     iters = 0
     best_metric = 100
+    if config.start_epoch > 0:
+        resume_state(config, net, optimizer, f"epoch_{config.start_epoch}")
     for epoch in range(config.start_epoch, config.nepoch):
         train(epoch)
         lr_scheduler.step()
+        # save model every epoch
+        save_state(config, net, optimizer, f"epoch_{epoch}")
     print("Best Results: {:.4f}\n".format(best_metric))
