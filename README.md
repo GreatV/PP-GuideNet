@@ -64,3 +64,9 @@ python -m paddle.distributed.launch train.py
 ```bash
 python test.py
 ```
+
+## Performance on the KITTI dataset `val_election_cropped`
+
+|RMSE|MAE|iRMSE|iMAE|Pre-trained model|
+|:----:|:----:|:------:|:------:|:----:|
+|776.48|225.29|2.52|1.05|[GNS_20230228](https://github.com/GreatV/PP-GuideNet/releases/download/v0.1/GNS_20230228.tar.xz)|
