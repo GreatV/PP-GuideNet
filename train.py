@@ -7,9 +7,10 @@ from easydict import EasyDict as edict
 
 def train(epoch):
     global iters
+    iters_local = 0
     Avg = AverageMeter()
     for batch_idx, (rgb, lidar, depth) in enumerate(trainloader):
-        if epoch >= config.test_epoch and iters % config.test_iters == 0:
+        if (epoch >= config.test_epoch) and (iters_local % config.test_iters == 0):
             test(epoch)
         net.train()
         optimizer.clear_grad()
@@ -19,8 +20,13 @@ def train(epoch):
         optimizer.step()
         Avg.update(loss.item())
         iters += 1
+        iters_local += 1
         if config.vis and batch_idx % config.vis_iters == 0:
-            print("Epoch {} Idx {} Loss {:.4f}".format(epoch, batch_idx, Avg.avg))
+            print(
+                "Epoch {} Iter {} Idx {} Loss {:.4f}".format(
+                    epoch, iters - 1, batch_idx, Avg.avg
+                )
+            )
 
 
 def test(epoch):
@@ -33,6 +39,7 @@ def test(epoch):
             prec = metric(output, depth).mean()
         Avg.update(prec.item(), rgb.shape[0])
     # save_state(config, net, optimizer, f"epoch_{epoch}")
+    print("Current Val Metric: {:.4f}\n".format(Avg.avg))
     if Avg.avg < best_metric:
         best_metric = Avg.avg
         save_state(config, net, optimizer, "best")
@@ -65,7 +72,7 @@ if __name__ == "__main__":
     iters = 0
     best_metric = 100
     if config.start_epoch > 0:
-        resume_state(config, net, optimizer, f"epoch_{config.start_epoch}")
+        resume_state(config, net, optimizer, f"epoch_{config.start_epoch - 1}")
     for epoch in range(config.start_epoch, config.nepoch):
         train(epoch)
         lr_scheduler.step()
