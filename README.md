@@ -65,7 +65,7 @@ python -m paddle.distributed.launch train.py
 python test.py
 ```
 
-## Performance on the KITTI dataset `val_election_cropped`
+## Performance on the KITTI dataset `val_selection_cropped`
 
 |RMSE|MAE|iRMSE|iMAE|Pre-trained model|
 |:----:|:----:|:------:|:------:|:----:|
